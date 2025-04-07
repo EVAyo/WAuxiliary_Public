@@ -1,10 +1,11 @@
-package wx.demo.hook.find
+package wx.demo.hook.experiment
 
 import me.hd.wauxv.data.config.DescriptorData
 import me.hd.wauxv.hook.anno.HookAnno
 import me.hd.wauxv.hook.anno.ViewAnno
-import me.hd.wauxv.hook.api.IDexFind
 import me.hd.wauxv.hook.base.SwitchHook
+import me.hd.wauxv.hook.core.api.IDexFind
+import me.hd.wauxv.hook.factory.findDexClassMethod
 import me.hd.wauxv.hook.factory.toDexMethod
 import org.lsposed.lsparanoid.Obfuscate
 import org.luckypray.dexkit.DexKitBridge
@@ -21,28 +22,36 @@ object PadModeHook : SwitchHook("PadModeHook"), IDexFind {
     override val funcDesc = "可在当前设备登录另一台设备的微信号"
 
     override fun initOnce() {
-        MethodIsPadDevice.desc.toDexMethod().hook {
-            beforeIfEnabled {
-                resultTrue()
+        MethodIsPadDevice.toDexMethod {
+            hook {
+                beforeIfEnabled {
+                    resultTrue()
+                }
             }
         }
-        MethodIsFoldableDevice.desc.toDexMethod().hook {
-            beforeIfEnabled {
-                resultFalse()
+        MethodIsFoldableDevice.toDexMethod {
+            hook {
+                beforeIfEnabled {
+                    resultFalse()
+                }
             }
         }
     }
 
     override fun dexFind(dexKit: DexKitBridge) {
-        MethodIsPadDevice.desc = dexKit.findMethod {
-            matcher {
-                usingEqStrings("Lenovo TB-9707F")
+        MethodIsPadDevice.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    usingEqStrings("Lenovo TB-9707F")
+                }
             }
-        }.single().descriptor
-        MethodIsFoldableDevice.desc = dexKit.findMethod {
-            matcher {
-                usingEqStrings("isRoyoleFoldableDevice!!!")
+        }
+        MethodIsFoldableDevice.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    usingEqStrings("isRoyoleFoldableDevice!!!")
+                }
             }
-        }.single().descriptor
+        }
     }
 }

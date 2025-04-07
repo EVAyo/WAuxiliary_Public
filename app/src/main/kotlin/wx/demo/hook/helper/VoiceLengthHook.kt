@@ -1,4 +1,4 @@
-package wx.demo.hook.ver
+package wx.demo.hook.helper
 
 import android.view.LayoutInflater
 import android.view.View
@@ -12,8 +12,9 @@ import me.hd.wauxv.databinding.ModuleDialogVoiceLengthBinding
 import me.hd.wauxv.factory.showDialog
 import me.hd.wauxv.hook.anno.HookAnno
 import me.hd.wauxv.hook.anno.ViewAnno
-import me.hd.wauxv.hook.api.IDexFind
 import me.hd.wauxv.hook.base.SwitchHook
+import me.hd.wauxv.hook.core.api.IDexFind
+import me.hd.wauxv.hook.factory.findDexClassMethod
 import me.hd.wauxv.hook.factory.toDexMethod
 import org.lsposed.lsparanoid.Obfuscate
 import org.luckypray.dexkit.DexKitBridge
@@ -40,26 +41,35 @@ object VoiceLengthHook : SwitchHook("VoiceLengthHook"), IDexFind {
             negativeButton()
         }
     }
-    override val isAvailable = HostInfo.versionCode > WxVersion.V8_0_30.code
+    override val isAvailable = HostInfo.verCode > WxVersion.V8_0_30.code
 
     override fun initOnce() {
-        MethodSetVoice.desc.toDexMethod().hook {
-            beforeIfEnabled {
-                val obj = args(0).any()!!
-                val voiceLengthFieldName = "l"
-                obj::class.java.field {
-                    name = voiceLengthFieldName
-                    type = IntType
-                }.get(obj).set(ValVoiceLength.intVal * 1000)
+        MethodSetVoice.toDexMethod {
+            hook {
+                beforeIfEnabled {
+                    val objIndex = when {
+                        args.size == 1 -> 0
+                        args.size == 2 && args[0] is String -> 1
+                        else -> return@beforeIfEnabled
+                    }
+                    val obj = args(objIndex).any()!!
+                    val voiceLengthFieldName = "l"
+                    obj::class.java.field {
+                        name = voiceLengthFieldName
+                        type = IntType
+                    }.get(obj).set(ValVoiceLength.intVal * 1000)
+                }
             }
         }
     }
 
     override fun dexFind(dexKit: DexKitBridge) {
-        MethodSetVoice.desc = dexKit.findMethod {
-            matcher {
-                usingEqStrings("MicroMsg.VoiceStorage", "update failed, no values set")
+        MethodSetVoice.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    usingEqStrings("MicroMsg.VoiceStorage", "update failed, no values set")
+                }
             }
-        }.single().descriptor
+        }
     }
 }

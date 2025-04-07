@@ -1,4 +1,4 @@
-package wx.demo.hook.find
+package wx.demo.hook.helper
 
 import android.app.Activity
 import android.content.Intent
@@ -16,8 +16,9 @@ import me.hd.wauxv.databinding.ModuleDialogLocationBinding
 import me.hd.wauxv.factory.showDialog
 import me.hd.wauxv.hook.anno.HookAnno
 import me.hd.wauxv.hook.anno.ViewAnno
-import me.hd.wauxv.hook.api.IDexFind
 import me.hd.wauxv.hook.base.SwitchHook
+import me.hd.wauxv.hook.core.api.IDexFind
+import me.hd.wauxv.hook.factory.findDexClassMethod
 import me.hd.wauxv.hook.factory.toDexMethod
 import me.hd.wauxv.hook.factory.toLazyAppClass
 import org.lsposed.lsparanoid.Obfuscate
@@ -94,50 +95,54 @@ object LocationHook : SwitchHook("LocationHook"), IDexFind {
                 }
             }
         }
-        listOf(
-            MethodListener.desc.toDexMethod(),
-            MethodListenerWgs84.desc.toDexMethod(),
-            MethodDefaultManager.desc.toDexMethod()
-        ).forEach { method ->
-            method.hook {
-                beforeIfEnabled {
-                    val location = args(0).any()!!
-                    location::class.java.apply {
-                        method { name = "getLatitude" }.hook {
-                            beforeIfEnabled {
-                                result = ValLatitude.floatVal.toDouble()
+        listOf(MethodListener, MethodListenerWgs84, MethodDefaultManager).forEach { descData ->
+            descData.toDexMethod {
+                hook {
+                    beforeIfEnabled {
+                        val location = args(0).any()!!
+                        location::class.java.apply {
+                            method { name = "getLatitude" }.hook {
+                                beforeIfEnabled {
+                                    result = ValLatitude.floatVal.toDouble()
+                                }
+                            }
+                            method { name = "getLongitude" }.hook {
+                                beforeIfEnabled {
+                                    result = ValLongitude.floatVal.toDouble()
+                                }
                             }
                         }
-                        method { name = "getLongitude" }.hook {
-                            beforeIfEnabled {
-                                result = ValLongitude.floatVal.toDouble()
-                            }
-                        }
+                        removeSelf()
                     }
-                    removeSelf()
                 }
             }
         }
     }
 
     override fun dexFind(dexKit: DexKitBridge) {
-        MethodListener.desc = dexKit.findMethod {
-            matcher {
-                name = "onLocationChanged"
-                usingEqStrings("MicroMsg.SLocationListener")
+        MethodListener.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    name = "onLocationChanged"
+                    usingEqStrings("MicroMsg.SLocationListener")
+                }
             }
-        }.single().descriptor
-        MethodListenerWgs84.desc = dexKit.findMethod {
-            matcher {
-                name = "onLocationChanged"
-                usingEqStrings("MicroMsg.SLocationListenerWgs84")
+        }
+        MethodListenerWgs84.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    name = "onLocationChanged"
+                    usingEqStrings("MicroMsg.SLocationListenerWgs84")
+                }
             }
-        }.single().descriptor
-        MethodDefaultManager.desc = dexKit.findMethod {
-            matcher {
-                name = "onLocationChanged"
-                usingEqStrings("MicroMsg.DefaultTencentLocationManager", "[mlocationListener]error:%d, reason:%s")
+        }
+        MethodDefaultManager.findDexClassMethod(dexKit) {
+            onMethod {
+                matcher {
+                    name = "onLocationChanged"
+                    usingEqStrings("MicroMsg.DefaultTencentLocationManager", "[mlocationListener]error:%d, reason:%s")
+                }
             }
-        }.single().descriptor
+        }
     }
 }

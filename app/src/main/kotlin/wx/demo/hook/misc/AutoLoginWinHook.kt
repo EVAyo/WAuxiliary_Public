@@ -1,4 +1,4 @@
-package wx.demo.hook.find
+package wx.demo.hook.misc
 
 import android.app.Activity
 import android.view.LayoutInflater
@@ -29,8 +29,8 @@ object AutoLoginWinHook : SwitchHook("AutoLoginWinHook") {
     private const val SHOW_LOGIN_DEVICE = 0b010 // 显示登录设备
     private const val AUTO_LOGIN_DEVICE = 0b100 // 自动登录设备
 
-    override val location = "增强"
-    override val funcName = "自动登录"
+    override val location = "杂项"
+    override val funcName = "自动点击登录"
     override val funcDesc = "微信请求登录时自动勾选项及点击按钮"
     override var onClick: ((View) -> Unit)? = { layoutView ->
         val binding = ModuleDialogAutoLoginWinBinding.inflate(LayoutInflater.from(layoutView.context))
